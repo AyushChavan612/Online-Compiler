@@ -6,9 +6,10 @@ interface HeaderProps {
   onSuggestClick: () => void;
   onToggleSidebar: () => void;
   onToggleTerminal: () => void;
+  onToggleSettings: () => void;
 }
 
-export default function Header({ onRunClick, onSuggestClick, onToggleSidebar, onToggleTerminal }: HeaderProps) {
+export default function Header({ onRunClick, onSuggestClick, onToggleSidebar, onToggleTerminal, onToggleSettings }: HeaderProps) {
   return (
     <div className="bg-gray-800 p-2 flex items-center justify-between border-b border-gray-700">
       {}
@@ -30,6 +31,13 @@ export default function Header({ onRunClick, onSuggestClick, onToggleSidebar, on
           className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-1 px-4 rounded text-xs"
         >
           Toggle Terminal
+        </button>
+        <button
+          onClick={onToggleSettings}
+          className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-1 px-4 rounded text-xs"
+          title="Settings"
+        >
+          ⚙ Settings
         </button>
       </div>
 

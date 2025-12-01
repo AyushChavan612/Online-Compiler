@@ -12,6 +12,7 @@ import FileExplorer from '@/components/FileExplorer';
 import Terminal from '@/components/Terminal';
 import EditorLoader from '@/components/EditorLoader';
 import Header from '@/components/Header';
+import SettingsPanel from '@/components/SettingsPanel';
 import Tabs from '@/components/Tabs';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
@@ -28,13 +29,10 @@ const SUPPORTED_EXTENSIONS = ['js', 'py', 'c', 'cpp', 'java'];
 
 export default function Home() {
   // All your state...
-  const [files, setFiles] = useState<FileNode[]>([
-    { name: 'index.js', type: 'file', path: '/index.js', content: 'console.log("Hello, DevFlow!");' },
-    { name: 'styles.css', type: 'file', path: '/styles.css', content: '/* Add your styles here */' },
-    { name: 'package.json', type: 'file', path: '/package.json', content: '{ "name": "devflow-ide" }' }
-  ]);
-  const [openFiles, setOpenFiles] = useState<string[]>(['/index.js']);
-  const [activeFileName, setActiveFileName] = useState('/index.js');
+  // Start with no default files; user must create them
+  const [files, setFiles] = useState<FileNode[]>([]);
+  const [openFiles, setOpenFiles] = useState<string[]>([]);
+  const [activeFileName, setActiveFileName] = useState('');
   const [terminalOutput, setTerminalOutput] = useState<string[]>(['> Welcome to the DevFlow terminal!']);
   const [isAddingFile, setIsAddingFile] = useState(false);
   const [isAddingFolder, setIsAddingFolder] = useState(false);
@@ -42,6 +40,9 @@ export default function Home() {
   const [addingInPath, setAddingInPath] = useState('/');
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isTerminalVisible, setIsTerminalVisible] = useState(true);
+  const [fontSize, setFontSize] = useState(14);
+  const [tabSize, setTabSize] = useState(2);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Helper functions
   const findFileByPath = (nodes: FileNode[], path: string): FileNode | null => {
@@ -211,6 +212,7 @@ export default function Home() {
 
   const toggleSidebar = () => setIsSidebarVisible(prev => !prev);
   const toggleTerminal = () => setIsTerminalVisible(prev => !prev);
+  const toggleSettings = () => setShowSettings(prev => !prev);
   
   const handleFileCreate = (parentPath?: string) => {
     setAddingInPath(parentPath || '/');
@@ -236,38 +238,46 @@ export default function Home() {
     <main className="flex h-screen w-screen bg-gray-900 text-white">
       <PanelGroup direction="horizontal" className="flex-1">
         {isSidebarVisible && (
-          <>
-            <Panel defaultSize={20} minSize={15}>
-              <FileExplorer
-                files={files}
-                activeFile={activeFileName}
-                onSelectFile={handleSelectFile}
-                onFileDelete={handleDeleteFile}
-                onFileCreate={handleFileCreate}
-                onFolderCreate={handleFolderCreate}
-                isAddingFile={isAddingFile}
-                isAddingFolder={isAddingFolder}
-                newFileName={newFileName}
-                setNewFileName={setNewFileName}
-                handleCreateFormSubmit={handleCreateFile}
-                handleFolderCreateSubmit={handleCreateFolder}
-                onInputBlur={handleInputBlur}
-                addingInPath={addingInPath}
-              />
-            </Panel>
-            <PanelResizeHandle className="w-1 bg-gray-700 hover:bg-sky-600" />
-          </>
+          <Panel id="sidebar" defaultSize={20} minSize={15}>
+            <FileExplorer
+              files={files}
+              activeFile={activeFileName}
+              onSelectFile={handleSelectFile}
+              onFileDelete={handleDeleteFile}
+              onFileCreate={handleFileCreate}
+              onFolderCreate={handleFolderCreate}
+              isAddingFile={isAddingFile}
+              isAddingFolder={isAddingFolder}
+              newFileName={newFileName}
+              setNewFileName={setNewFileName}
+              handleCreateFormSubmit={handleCreateFile}
+              handleFolderCreateSubmit={handleCreateFolder}
+              onInputBlur={handleInputBlur}
+              addingInPath={addingInPath}
+            />
+          </Panel>
         )}
-        <Panel>
+        {isSidebarVisible && <PanelResizeHandle className="w-1 bg-gray-700 hover:bg-sky-600" />}
+        <Panel id="main" defaultSize={isSidebarVisible ? 80 : 100} minSize={40}>
           <PanelGroup direction="vertical">
-            <Panel minSize={30}>
+            <Panel id="editor" defaultSize={75} minSize={30}>
               <div className="flex flex-col h-full">
                 <Header 
                   onRunClick={handleRunCode} 
                   onSuggestClick={handleSuggestCode}
                   onToggleSidebar={toggleSidebar}
                   onToggleTerminal={toggleTerminal}
+                  onToggleSettings={toggleSettings}
                 />
+                {showSettings && (
+                  <SettingsPanel
+                    fontSize={fontSize}
+                    tabSize={tabSize}
+                    onFontSizeChange={setFontSize}
+                    onTabSizeChange={setTabSize}
+                    onClose={() => setShowSettings(false)}
+                  />
+                )}
                 <Tabs
                   openFiles={openFiles}
                   activeFile={activeFileName}
@@ -277,14 +287,16 @@ export default function Home() {
                 <EditorLoader
                   fileContent={activeFile?.content || ''}
                   onContentChange={handleEditorChange}
-                  language={language} 
+                  language={language}
+                  fontSize={fontSize}
+                  tabSize={tabSize}
                 />
               </div>
             </Panel>
             {isTerminalVisible && (
               <>
                 <PanelResizeHandle className="h-1 bg-gray-700 hover:bg-sky-600" />
-                <Panel defaultSize={25} minSize={10}>
+                <Panel id="terminal" defaultSize={25} minSize={10}>
                   <Terminal output={terminalOutput} />
                 </Panel>
               </>
