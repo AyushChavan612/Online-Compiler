@@ -1,8 +1,0 @@
-# Ignore node_modules, as they will be installed in the container
-node_modules
-
-# Ignore the .env file - we will handle secrets differently
-.env
-
-# Ignore the temp folder
-temp

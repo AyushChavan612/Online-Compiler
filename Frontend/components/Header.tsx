@@ -11,7 +11,7 @@ interface HeaderProps {
 export default function Header({ onRunClick, onSuggestClick, onToggleSidebar, onToggleTerminal }: HeaderProps) {
   return (
     <div className="bg-gray-800 p-2 flex items-center justify-between border-b border-gray-700">
-      {/* Left side buttons */}
+      {}
       <div className="flex items-center space-x-4">
         <button
           onClick={onRunClick}
@@ -33,7 +33,7 @@ export default function Header({ onRunClick, onSuggestClick, onToggleSidebar, on
         </button>
       </div>
 
-      {/* Right side buttons */}
+      {}
       <div className="flex items-center space-x-4">
         <button
           onClick={onSuggestClick}

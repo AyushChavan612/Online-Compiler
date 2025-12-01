@@ -7,7 +7,7 @@ const CodeEditor = dynamic(() => import('@/components/CodeEditor'), { /* ... */ 
 interface EditorLoaderProps {
   fileContent: string;
   onContentChange: (value: string | undefined) => void;
-  language: string; // <-- ADD THIS
+  language: string; 
 }
 
 export default function EditorLoader({ fileContent, onContentChange, language }: EditorLoaderProps) {
@@ -16,7 +16,7 @@ export default function EditorLoader({ fileContent, onContentChange, language }:
       <CodeEditor 
         content={fileContent} 
         onChange={onContentChange}
-        language={language} // <-- PASS IT DOWN
+        language={language} 
       />
     </div>
   );

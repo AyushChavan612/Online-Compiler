@@ -14,40 +14,106 @@ import EditorLoader from '@/components/EditorLoader';
 import Header from '@/components/Header';
 import Tabs from '@/components/Tabs';
 
-// --- 1. THIS IS THE NEW LINE ---
-// This will use the variable from Docker, or default to localhost for local testing
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
 
-interface File {
+interface FileNode {
   name: string;
-  content: string;
+  type: 'file' | 'folder';
+  content?: string;
+  path: string;
+  children?: FileNode[];
 }
 
 const SUPPORTED_EXTENSIONS = ['js', 'py', 'c', 'cpp', 'java'];
 
 export default function Home() {
   // All your state...
-  const [files, setFiles] = useState<File[]>([
-    { name: 'index.js', content: 'console.log("Hello, DevFlow!");' },
-    { name: 'styles.css', content: '/* Add your styles here */' },
-    { name: 'package.json', content: '{ "name": "devflow-ide" }' }
+  const [files, setFiles] = useState<FileNode[]>([
+    { name: 'index.js', type: 'file', path: '/index.js', content: 'console.log("Hello, DevFlow!");' },
+    { name: 'styles.css', type: 'file', path: '/styles.css', content: '/* Add your styles here */' },
+    { name: 'package.json', type: 'file', path: '/package.json', content: '{ "name": "devflow-ide" }' }
   ]);
-  const [openFiles, setOpenFiles] = useState<string[]>(['index.js']);
-  const [activeFileName, setActiveFileName] = useState('index.js');
+  const [openFiles, setOpenFiles] = useState<string[]>(['/index.js']);
+  const [activeFileName, setActiveFileName] = useState('/index.js');
   const [terminalOutput, setTerminalOutput] = useState<string[]>(['> Welcome to the DevFlow terminal!']);
   const [isAddingFile, setIsAddingFile] = useState(false);
+  const [isAddingFolder, setIsAddingFolder] = useState(false);
   const [newFileName, setNewFileName] = useState('');
+  const [addingInPath, setAddingInPath] = useState('/');
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isTerminalVisible, setIsTerminalVisible] = useState(true);
 
-  // All your handlers...
-  const activeFile = files.find(file => file.name === activeFileName);
-
-  const handleSelectFile = (fileName: string) => {
-    if (!openFiles.includes(fileName)) {
-      setOpenFiles([...openFiles, fileName]);
+  // Helper functions
+  const findFileByPath = (nodes: FileNode[], path: string): FileNode | null => {
+    for (const node of nodes) {
+      if (node.path === path) return node;
+      if (node.type === 'folder' && node.children) {
+        const found = findFileByPath(node.children, path);
+        if (found) return found;
+      }
     }
-    setActiveFileName(fileName);
+    return null;
+  };
+
+  const addNodeToTree = (nodes: FileNode[], newNode: FileNode, parentPath: string): FileNode[] => {
+    if (parentPath === '/') {
+      return [...nodes, newNode];
+    }
+    return nodes.map(node => {
+      if (node.path === parentPath && node.type === 'folder') {
+        return {
+          ...node,
+          children: [...(node.children || []), newNode]
+        };
+      }
+      if (node.type === 'folder' && node.children) {
+        return {
+          ...node,
+          children: addNodeToTree(node.children, newNode, parentPath)
+        };
+      }
+      return node;
+    });
+  };
+
+  const deleteNodeFromTree = (nodes: FileNode[], pathToDelete: string): FileNode[] => {
+    return nodes.filter(node => node.path !== pathToDelete).map(node => {
+      if (node.type === 'folder' && node.children) {
+        return {
+          ...node,
+          children: deleteNodeFromTree(node.children, pathToDelete)
+        };
+      }
+      return node;
+    });
+  };
+
+  const updateNodeContent = (nodes: FileNode[], path: string, newContent: string): FileNode[] => {
+    return nodes.map(node => {
+      if (node.path === path && node.type === 'file') {
+        return { ...node, content: newContent };
+      }
+      if (node.type === 'folder' && node.children) {
+        return {
+          ...node,
+          children: updateNodeContent(node.children, path, newContent)
+        };
+      }
+      return node;
+    });
+  };
+
+  // All your handlers...
+  const activeFile = findFileByPath(files, activeFileName);
+
+  const handleSelectFile = (filePath: string) => {
+    const file = findFileByPath(files, filePath);
+    if (file && file.type === 'file') {
+      if (!openFiles.includes(filePath)) {
+        setOpenFiles([...openFiles, filePath]);
+      }
+      setActiveFileName(filePath);
+    }
   };
 
   const handleCloseTab = (fileNameToClose: string) => {
@@ -60,10 +126,7 @@ export default function Home() {
 
   const handleEditorChange = (newContent: string | undefined) => {
     if (newContent === undefined) return;
-    const updatedFiles = files.map(file =>
-      file.name === activeFileName ? { ...file, content: newContent } : file
-    );
-    setFiles(updatedFiles);
+    setFiles(updateNodeContent(files, activeFileName, newContent));
   };
 
   const handleCreateFile = (e: FormEvent) => {
@@ -72,32 +135,54 @@ export default function Home() {
     if (name) {
       const extension = name.split('.').pop()?.toLowerCase();
       if (extension && SUPPORTED_EXTENSIONS.includes(extension)) {
-        const newFile = { name, content: `// New file: ${name}\n` };
-        setFiles([...files, newFile]);
-        if (!openFiles.includes(name)) {
-          setOpenFiles([...openFiles, name]);
+        const newPath = addingInPath === '/' ? `/${name}` : `${addingInPath}/${name}`;
+        const newFile: FileNode = { 
+          name, 
+          type: 'file',
+          path: newPath,
+          content: `// New file: ${name}\n` 
+        };
+        setFiles(addNodeToTree(files, newFile, addingInPath));
+        if (!openFiles.includes(newPath)) {
+          setOpenFiles([...openFiles, newPath]);
         }
-        setActiveFileName(name);
+        setActiveFileName(newPath);
         setNewFileName('');
         setIsAddingFile(false);
+        setAddingInPath('/');
       } else {
         alert(`Error: Unsupported file extension. Please use one of: ${SUPPORTED_EXTENSIONS.join(', ')}`);
       }
     }
   };
 
-  const handleDeleteFile = (fileNameToDelete: string) => {
-    handleCloseTab(fileNameToDelete);
-    const remainingFiles = files.filter(file => file.name !== fileNameToDelete);
-    setFiles(remainingFiles);
+  const handleCreateFolder = (e: FormEvent) => {
+    e.preventDefault();
+    const name = newFileName.trim();
+    if (name) {
+      const newPath = addingInPath === '/' ? `/${name}` : `${addingInPath}/${name}`;
+      const newFolder: FileNode = { 
+        name, 
+        type: 'folder',
+        path: newPath,
+        children: []
+      };
+      setFiles(addNodeToTree(files, newFolder, addingInPath));
+      setNewFileName('');
+      setIsAddingFolder(false);
+      setAddingInPath('/');
+    }
   };
 
-  // --- 2. THIS FUNCTION IS NOW UPDATED ---
+  const handleDeleteFile = (pathToDelete: string) => {
+    handleCloseTab(pathToDelete);
+    setFiles(deleteNodeFromTree(files, pathToDelete));
+  };
+
   const handleRunCode = async () => {
-    if (!activeFile) return;
-    setTerminalOutput(prev => [...prev, `$ running ${activeFile.name}...`]);
+    if (!activeFile || activeFile.type !== 'file') return;
+    setTerminalOutput(prev => [...prev, `$ running ${activeFile.path}...`]);
     try {
-      // It now uses the BACKEND_URL variable
       const response = await fetch(`${BACKEND_URL}/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -127,9 +212,26 @@ export default function Home() {
   const toggleSidebar = () => setIsSidebarVisible(prev => !prev);
   const toggleTerminal = () => setIsTerminalVisible(prev => !prev);
   
-  const language = activeFile?.name.split('.').pop() || 'plaintext';
+  const handleFileCreate = (parentPath?: string) => {
+    setAddingInPath(parentPath || '/');
+    setIsAddingFile(true);
+    setIsAddingFolder(false);
+  };
 
-  // Your layout JSX is unchanged...
+  const handleFolderCreate = (parentPath?: string) => {
+    setAddingInPath(parentPath || '/');
+    setIsAddingFolder(true);
+    setIsAddingFile(false);
+  };
+
+  const handleInputBlur = () => {
+    setIsAddingFile(false);
+    setIsAddingFolder(false);
+    setNewFileName('');
+    setAddingInPath('/');
+  };
+  
+  const language = activeFile?.name.split('.').pop() || 'plaintext';
   return (
     <main className="flex h-screen w-screen bg-gray-900 text-white">
       <PanelGroup direction="horizontal" className="flex-1">
@@ -141,12 +243,16 @@ export default function Home() {
                 activeFile={activeFileName}
                 onSelectFile={handleSelectFile}
                 onFileDelete={handleDeleteFile}
-                onFileCreate={() => setIsAddingFile(true)}
+                onFileCreate={handleFileCreate}
+                onFolderCreate={handleFolderCreate}
                 isAddingFile={isAddingFile}
+                isAddingFolder={isAddingFolder}
                 newFileName={newFileName}
                 setNewFileName={setNewFileName}
                 handleCreateFormSubmit={handleCreateFile}
-                onInputBlur={() => setIsAddingFile(false)}
+                handleFolderCreateSubmit={handleCreateFolder}
+                onInputBlur={handleInputBlur}
+                addingInPath={addingInPath}
               />
             </Panel>
             <PanelResizeHandle className="w-1 bg-gray-700 hover:bg-sky-600" />

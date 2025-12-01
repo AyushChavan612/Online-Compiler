@@ -1,11 +1,16 @@
 // backend/index.js
-const express = require('express');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
-const { exec } = require('child_process');
-const { v4: uuidv4 } = require('uuid');
-const rateLimit = require('express-rate-limit');
+import express from 'express';
+import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { exec } from 'child_process';
+import { v4 as uuidv4 } from 'uuid';
+import rateLimit from 'express-rate-limit';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const port = 5000;
@@ -14,13 +19,11 @@ app.use(cors());
 app.use(express.json());
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000, 
   max: 3, 
   message: "Too many requests from this IP, please try again after 15 minutes",
   standardHeaders: true,
   legacyHeaders: false,
-  // --- THIS IS THE FIX ---
-  // This tells the limiter to ignore all pre-flight (OPTIONS) requests
   skip: (req) => req.method === 'OPTIONS',
 });
 app.use(limiter);
@@ -40,7 +43,6 @@ app.post('/run', (req, res) => {
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
     
     let command, filePath, cleanupPaths = [];
-
     switch (extension) {
       case 'js':
         filePath = path.join(tempDir, `${uniqueId}.js`);

@@ -5,15 +5,13 @@ import Editor from "@monaco-editor/react";
 interface CodeEditorProps {
   content: string;
   onChange: (value: string | undefined) => void;
-  language: string; // <-- ADD THIS
+  language: string; 
 }
 
 export default function CodeEditor({ content, onChange, language }: CodeEditorProps) {
-  // Map our simple extension to Monaco's official language ID if needed
   const getLanguageId = (lang: string) => {
     if (lang === 'js') return 'javascript';
     if (lang === 'py') return 'python';
-    // Monaco handles 'cpp', 'c', and 'java' directly
     return lang;
   };
 
@@ -21,7 +19,7 @@ export default function CodeEditor({ content, onChange, language }: CodeEditorPr
     <Editor
       height="100%"
       theme="vs-dark"
-      language={getLanguageId(language)} // <-- USE THE PROP HERE
+      language={getLanguageId(language)} 
       value={content}
       onChange={onChange}
     />
