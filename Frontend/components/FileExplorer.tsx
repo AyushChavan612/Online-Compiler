@@ -99,6 +99,11 @@ export default function FileExplorer({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      setExpandedFolders(prev => {
+                        const ns = new Set(prev);
+                        ns.add(node.path);
+                        return ns;
+                      });
                       onFileCreate(node.path);
                     }}
                     className="text-green-400 hover:text-green-300 text-xs font-bold px-1"
@@ -109,6 +114,11 @@ export default function FileExplorer({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      setExpandedFolders(prev => {
+                        const ns = new Set(prev);
+                        ns.add(node.path);
+                        return ns;
+                      });
                       onFolderCreate(node.path);
                     }}
                     className="text-blue-400 hover:text-blue-300 text-xs font-bold px-1"
@@ -126,9 +136,9 @@ export default function FileExplorer({
               </button>
             </div>
           </div>
-          {node.type === 'folder' && isExpanded && node.children && (
+          {node.type === 'folder' && isExpanded && (
             <div>
-              {renderFileTree(node.children, node.path, depth + 1)}
+              {node.children && renderFileTree(node.children, node.path, depth + 1)}
               {isAddingFile && addingInPath === node.path && (
                 <div className="p-1" style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }}>
                   <form onSubmit={handleCreateFormSubmit}>

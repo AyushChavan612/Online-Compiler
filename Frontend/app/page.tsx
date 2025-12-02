@@ -14,8 +14,10 @@ import EditorLoader from '@/components/EditorLoader';
 import Header from '@/components/Header';
 import SettingsPanel from '@/components/SettingsPanel';
 import Tabs from '@/components/Tabs';
+import AIHelpModal from '@/components/AIHelpModal';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+const RAG_URL = process.env.NEXT_PUBLIC_RAG_URL || 'http://127.0.0.1:8080';
 
 interface FileNode {
   name: string;
@@ -43,6 +45,10 @@ export default function Home() {
   const [fontSize, setFontSize] = useState(14);
   const [tabSize, setTabSize] = useState(2);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAIHelp, setShowAIHelp] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<any>(null);
+  const [lastRunOutput, setLastRunOutput] = useState<string>("");
 
   // Helper functions
   const findFileByPath = (nodes: FileNode[], path: string): FileNode | null => {
@@ -75,6 +81,13 @@ export default function Home() {
       }
       return node;
     });
+  };
+
+  const getChildrenAtPath = (nodes: FileNode[], parentPath: string): FileNode[] => {
+    if (parentPath === '/') return nodes;
+    const parent = findFileByPath(nodes, parentPath);
+    if (parent && parent.type === 'folder') return parent.children || [];
+    return [];
   };
 
   const deleteNodeFromTree = (nodes: FileNode[], pathToDelete: string): FileNode[] => {
@@ -136,6 +149,13 @@ export default function Home() {
     if (name) {
       const extension = name.split('.').pop()?.toLowerCase();
       if (extension && SUPPORTED_EXTENSIONS.includes(extension)) {
+        // Disallow duplicate names under the same parent
+        const siblings = getChildrenAtPath(files, addingInPath);
+        const duplicate = siblings.some(n => n.name === name);
+        if (duplicate) {
+          alert(`An item named "${name}" already exists here.`);
+          return;
+        }
         const newPath = addingInPath === '/' ? `/${name}` : `${addingInPath}/${name}`;
         const newFile: FileNode = { 
           name, 
@@ -161,6 +181,13 @@ export default function Home() {
     e.preventDefault();
     const name = newFileName.trim();
     if (name) {
+      // Disallow duplicate names under the same parent
+      const siblings = getChildrenAtPath(files, addingInPath);
+      const duplicate = siblings.some(n => n.name === name);
+      if (duplicate) {
+        alert(`A folder named "${name}" already exists here.`);
+        return;
+      }
       const newPath = addingInPath === '/' ? `/${name}` : `${addingInPath}/${name}`;
       const newFolder: FileNode = { 
         name, 
@@ -195,19 +222,71 @@ export default function Home() {
 
       if (!response.ok) {
         const errorText = await response.text();
+        setLastRunOutput(errorText);
         setTerminalOutput(prev => [...prev, `Error: ${errorText}`, '--------------------']);
       } else {
         const result = await response.json();
-        setTerminalOutput(prev => [...prev, result.output, '--------------------']);
+        const out = result.output ?? '';
+        // Check if output contains compiler/runtime errors
+        if (out.toLowerCase().includes('error:') || out.toLowerCase().includes('exception')) {
+          setLastRunOutput(out);
+        } else {
+          setLastRunOutput(''); // Clear errors on successful run
+        }
+        setTerminalOutput(prev => [...prev, out, '--------------------']);
       }
     } catch (error) {
       console.error("Failed to run code:", error);
-      setTerminalOutput(prev => [...prev, `Error: Failed to connect to backend. Is it running?`, '--------------------']);
+      const msg = `Failed to connect to backend. Is it running?`;
+      setLastRunOutput(msg);
+      setTerminalOutput(prev => [...prev, `Error: ${msg}`, '--------------------']);
     }
   };
 
   const handleSuggestCode = async () => {
-    alert("AI Suggestion feature not implemented yet.");
+    if (!activeFile || activeFile.type !== 'file') {
+      alert('Open a file to ask AI for help.');
+      return;
+    }
+
+    const ext = (activeFile.name.split('.').pop() || '').toLowerCase();
+    const mapLang = (e: string) => {
+      switch (e) {
+        case 'js': return 'javascript';
+        case 'ts': return 'typescript';
+        case 'py': return 'python';
+        case 'c': return 'c';
+        case 'cpp': return 'cpp';
+        case 'java': return 'java';
+        default: return 'plaintext';
+      }
+    };
+    const payload = {
+      language: mapLang(ext),
+      code: activeFile.content || '',
+      errorLogs: lastRunOutput || 'No errors captured yet. Please analyze the code for potential issues.',
+    };
+    
+    try {
+      setShowAIHelp(true);
+      setAiLoading(true);
+      const res = await fetch(`${RAG_URL}/debug/debug-compiler`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        setAiResult({ error: text });
+      } else {
+        const data = await res.json();
+        setAiResult(data);
+      }
+    } catch (e: any) {
+      setAiResult({ error: e?.message || String(e) });
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const toggleSidebar = () => setIsSidebarVisible(prev => !prev);
@@ -304,6 +383,13 @@ export default function Home() {
           </PanelGroup>
         </Panel>
       </PanelGroup>
+      {showAIHelp && (
+        <AIHelpModal
+          loading={aiLoading}
+          result={aiResult}
+          onClose={() => { setShowAIHelp(false); setAiResult(null); }}
+        />
+      )}
     </main>
   );
 }
