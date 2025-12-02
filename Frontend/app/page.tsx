@@ -15,9 +15,11 @@ import Header from '@/components/Header';
 import SettingsPanel from '@/components/SettingsPanel';
 import Tabs from '@/components/Tabs';
 import AIHelpModal from '@/components/AIHelpModal';
+import OptimizeModal from '@/components/OptimizeModal';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
 const RAG_URL = process.env.NEXT_PUBLIC_RAG_URL || 'http://127.0.0.1:8080';
+const OPTIMIZER_URL = process.env.NEXT_PUBLIC_OPTIMIZER_URL || 'http://127.0.0.1:5000';
 
 interface FileNode {
   name: string;
@@ -49,6 +51,9 @@ export default function Home() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<any>(null);
   const [lastRunOutput, setLastRunOutput] = useState<string>("");
+  const [showOptimizeModal, setShowOptimizeModal] = useState(false);
+  const [optimizeLoading, setOptimizeLoading] = useState(false);
+  const [optimizeResult, setOptimizeResult] = useState<any>(null);
 
   // Helper functions
   const findFileByPath = (nodes: FileNode[], path: string): FileNode | null => {
@@ -289,6 +294,52 @@ export default function Home() {
     }
   };
 
+  const handleOptimize = async () => {
+    if (!activeFile || activeFile.type !== 'file') {
+      alert('Open a file to optimize code.');
+      return;
+    }
+
+    const ext = (activeFile.name.split('.').pop() || '').toLowerCase();
+    const mapLang = (e: string) => {
+      switch (e) {
+        case 'js': return 'javascript';
+        case 'ts': return 'typescript';
+        case 'py': return 'python';
+        case 'c': return 'cpp';
+        case 'cpp': return 'cpp';
+        case 'java': return 'java';
+        default: return 'plaintext';
+      }
+    };
+
+    const payload = {
+      code: activeFile.content || '',
+      language: mapLang(ext),
+    };
+
+    try {
+      setShowOptimizeModal(true);
+      setOptimizeLoading(true);
+      const res = await fetch(`${OPTIMIZER_URL}/api/optimize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        setOptimizeResult({ error: text });
+      } else {
+        const data = await res.json();
+        setOptimizeResult(data);
+      }
+    } catch (e: any) {
+      setOptimizeResult({ error: e?.message || String(e) });
+    } finally {
+      setOptimizeLoading(false);
+    }
+  };
+
   const toggleSidebar = () => setIsSidebarVisible(prev => !prev);
   const toggleTerminal = () => setIsTerminalVisible(prev => !prev);
   const toggleSettings = () => setShowSettings(prev => !prev);
@@ -344,6 +395,7 @@ export default function Home() {
                 <Header 
                   onRunClick={handleRunCode} 
                   onSuggestClick={handleSuggestCode}
+                  onOptimizeClick={handleOptimize}
                   onToggleSidebar={toggleSidebar}
                   onToggleTerminal={toggleTerminal}
                   onToggleSettings={toggleSettings}
@@ -388,6 +440,13 @@ export default function Home() {
           loading={aiLoading}
           result={aiResult}
           onClose={() => { setShowAIHelp(false); setAiResult(null); }}
+        />
+      )}
+      {showOptimizeModal && (
+        <OptimizeModal
+          loading={optimizeLoading}
+          result={optimizeResult}
+          onClose={() => { setShowOptimizeModal(false); setOptimizeResult(null); }}
         />
       )}
     </main>

@@ -4,12 +4,13 @@
 interface HeaderProps {
   onRunClick: () => void;
   onSuggestClick: () => void;
+  onOptimizeClick: () => void;
   onToggleSidebar: () => void;
   onToggleTerminal: () => void;
   onToggleSettings: () => void;
 }
 
-export default function Header({ onRunClick, onSuggestClick, onToggleSidebar, onToggleTerminal, onToggleSettings }: HeaderProps) {
+export default function Header({ onRunClick, onSuggestClick, onOptimizeClick, onToggleSidebar, onToggleTerminal, onToggleSettings }: HeaderProps) {
   return (
     <div className="bg-gray-800 p-2 flex items-center justify-between border-b border-gray-700">
       {}
@@ -43,6 +44,12 @@ export default function Header({ onRunClick, onSuggestClick, onToggleSidebar, on
 
       {}
       <div className="flex items-center space-x-4">
+        <button
+          onClick={onOptimizeClick}
+          className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-4 rounded text-sm"
+        >
+          ⚡ Optimize
+        </button>
         <button
           onClick={onSuggestClick}
           className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-4 rounded text-sm"

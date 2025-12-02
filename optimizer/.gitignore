@@ -1,0 +1,33 @@
+--- Dependencies ---
+
+node_modules/
+package-lock.json
+
+--- Environment Variables (CRITICAL) ---
+
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+--- Logs ---
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+--- OS Files ---
+
+.DS_Store
+Thumbs.db
+
+--- Editor Config ---
+
+.vscode/
+.idea/

@@ -11,25 +11,30 @@ interface TabsProps {
 }
 
 export default function Tabs({ openFiles, activeFile, onTabClick, onTabClose }: TabsProps) {
-    const handleCloseClick = (e: MouseEvent, fileName: string) => {
+    const handleCloseClick = (e: MouseEvent, filePath: string) => {
         e.stopPropagation();
-        onTabClose(fileName);
+        onTabClose(filePath);
+    };
+
+    const getFileName = (path: string) => {
+        return path.split('/').pop() || path;
     };
 
     return (
         <div className="bg-gray-800 flex items-center border-b border-gray-700">
             {}
-            {openFiles.map(fileName => {
-                const isActive = fileName === activeFile;
+            {openFiles.map(filePath => {
+                const isActive = filePath === activeFile;
+                const displayName = getFileName(filePath);
                 return (
                     <div
-                        key={fileName}
-                        onClick={() => onTabClick(fileName)}
+                        key={filePath}
+                        onClick={() => onTabClick(filePath)}
                         className={`flex items-center p-2 cursor-pointer border-r border-gray-700 ${isActive ? 'bg-gray-700' : 'bg-gray-900 hover:bg-gray-700'}`}
                     >
-                        <span>{fileName}</span>
+                        <span>{displayName}</span>
                         <button
-                            onClick={(e) => handleCloseClick(e, fileName)}
+                            onClick={(e) => handleCloseClick(e, filePath)}
                             className="ml-4 text-gray-400 hover:text-white text-sm"
                         >
                             x
