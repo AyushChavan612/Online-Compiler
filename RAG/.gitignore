@@ -1,0 +1,42 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build artifacts / outputs
+artifacts/
+chroma-data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/
+
+# Optional cache folders
+.cache/
+dist/
+build/
+
+# Node.js output files
+*.pid
+*.seed
+*.pid.lock
+
+# TypeScript (if added later)
+*.tsbuildinfo
+
+# Misc
+*.local
+*.backup
