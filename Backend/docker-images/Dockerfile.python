@@ -1,0 +1,14 @@
+# Lightweight Python Alpine image for code execution
+FROM python:3.11-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Create non-root user for security
+RUN addgroup -S coderunner && adduser -S coderunner -G coderunner
+
+# Switch to non-root user
+USER coderunner
+
+# Default command (will be overridden)
+CMD ["python3"]

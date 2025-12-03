@@ -16,9 +16,10 @@ build/
 out/
 coverage/
 
-# Environment files
+# Environment files (CRITICAL - Contains API Keys!)
 .env
 .env.*
+.env.local
 !.env.example
 
 # OS / Editor junk
@@ -31,12 +32,21 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 
-# Backend temp execution directory
+# Backend temp execution directory (code execution files)
 Backend/temp/
+temp/
+
+# RAG Database (ChromaDB)
+RAG/chroma_db/
+chroma_db/
 
 # Misc
 *.local
 *.bak
 
-# Generated
-server.js
+# Research paper
+reserach paper.tex
+*.pdf
+
+# Docker (optional - usually you want to keep Dockerfiles)
+# docker-compose.override.yml

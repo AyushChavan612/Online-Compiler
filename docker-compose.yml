@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./Frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:5000
+      - NEXT_PUBLIC_RAG_URL=http://rag:8080
+      - NEXT_PUBLIC_OPTIMIZER_URL=http://optimizer:5001
+    depends_on:
+      - backend
+      - rag
+      - optimizer
+    networks:
+      - devflow-network
+
+  backend:
+    build: ./Backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket access
+      - ./Backend/temp:/app/temp
+    environment:
+      - NODE_ENV=production
+    privileged: true  # Required for Docker-in-Docker
+    networks:
+      - devflow-network
+
+  rag:
+    build: ./RAG
+    ports:
+      - "8080:8080"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./RAG/chroma_db:/app/chroma_db
+    networks:
+      - devflow-network
+
+  optimizer:
+    build: ./optimizer
+    ports:
+      - "5001:5001"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - PORT=5001
+    networks:
+      - devflow-network
+
+  chroma:
+    image: chromadb/chroma:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./RAG/chroma_db:/chroma/chroma
+    networks:
+      - devflow-network
+
+networks:
+  devflow-network:
+    driver: bridge
