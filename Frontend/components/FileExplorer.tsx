@@ -179,7 +179,7 @@ export default function FileExplorer({
   };
 
   return (
-    <div className="bg-gray-800 text-white p-4 flex flex-col h-full overflow-auto">
+    <div className="bg-gray-800 text-white p-4 flex flex-col h-full overflow-auto select-none">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold">Files</h2>
         <div className="flex gap-2">

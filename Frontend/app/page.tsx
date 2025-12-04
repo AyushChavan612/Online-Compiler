@@ -368,7 +368,7 @@ export default function Home() {
     <main className="flex h-screen w-screen bg-gray-900 text-white">
       <PanelGroup direction="horizontal" className="flex-1">
         {isSidebarVisible && (
-          <Panel id="sidebar" defaultSize={20} minSize={15}>
+          <Panel id="sidebar" defaultSize={20} minSize={15} maxSize={40}>
             <FileExplorer
               files={files}
               activeFile={activeFileName}
@@ -387,7 +387,7 @@ export default function Home() {
             />
           </Panel>
         )}
-        {isSidebarVisible && <PanelResizeHandle className="w-1 bg-gray-700 hover:bg-sky-600" />}
+        {isSidebarVisible && <PanelResizeHandle className="w-1 bg-gray-700 hover:bg-sky-600 select-none cursor-col-resize" />}
         <Panel id="main" defaultSize={isSidebarVisible ? 80 : 100} minSize={40}>
           <PanelGroup direction="vertical">
             <Panel id="editor" defaultSize={75} minSize={30}>
@@ -426,7 +426,7 @@ export default function Home() {
             </Panel>
             {isTerminalVisible && (
               <>
-                <PanelResizeHandle className="h-1 bg-gray-700 hover:bg-sky-600" />
+                <PanelResizeHandle className="h-1 bg-gray-700 hover:bg-sky-600 select-none" />
                 <Panel id="terminal" defaultSize={25} minSize={10}>
                   <Terminal output={terminalOutput} />
                 </Panel>
